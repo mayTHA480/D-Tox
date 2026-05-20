@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Header from './Header';
 import Card from './Card';
 import GameOverModal from './GameOverModal';
 import { useGame } from '../hooks/useGame';
