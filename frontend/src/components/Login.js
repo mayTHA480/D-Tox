@@ -6,6 +6,7 @@ import '../index.css';
 const BACKEND = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
 
 function Login() {
+  console.log("BACKEND:", process.env.REACT_APP_BACKEND_URL);
   const [tab, setTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
