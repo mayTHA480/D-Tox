@@ -1,140 +1,126 @@
-import { useState, useCallback } from 'react';
-import CARD_DATA from '../cardData';
+import React, { useEffect, useState } from 'react';
+import Header from './Header';
+import Card from './Card';
+import GameOverModal from './GameOverModal';
+import { useGame } from '../hooks/useGame';
+import { useAuth } from '../hooks/useAuth';
+import ScoreBoard from './ScoreBoard';
+import '../index.css';
 
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+export default function SinglePlayer() {
+  const { user, loading } = useAuth();
+  const { gameState, selected, log, gameOver, status, initGame, toggleCard, playCards } = useGame();
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      const timer = setTimeout(() => {
+        if (!sessionStorage.getItem('detox_guest')) {
+          window.location.href = '/';
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading]);
+
+  useEffect(() => {
+    if (!loading) initGame();
+  }, [loading]);
+
+  if (loading || !gameState) {
+    return <div className="loading-screen"><div className="loading-dot">✦</div></div>;
   }
-  return a;
-}
 
-function calcEffect(cards) {
-  return cards.reduce((sum, c) => sum + c.values.reduce((s, v) => s + v, 0), 0);
-}
+  const { playerHand, aiHand, deck, lastPlayed, playerHP, aiHP, turn } = gameState;
+  const isMyTurn = turn === 'player';
+  const canPlay = selected.length > 0 && isMyTurn;
 
-function aiChoosePlay(hand) {
-  let best = null, bestScore = -Infinity;
-  for (let i = 0; i < hand.length; i++) {
-    const c = hand[i];
-    if (c.type === 'double') {
-      const eff = calcEffect([c]);
-      const score = eff < 0 ? -eff * 2 : eff;
-      if (score > bestScore) { bestScore = score; best = { indices: [i], target: eff < 0 ? 'opponent' : 'self' }; }
-    } else {
-      for (let j = i; j < hand.length; j++) {
-        if (j !== i && hand[j].type === 'double') continue;
-        const cards = j === i ? [c] : [c, hand[j]];
-        const eff = calcEffect(cards);
-        const score = eff < 0 ? -eff * 2 : eff;
-        if (score > bestScore) { bestScore = score; best = { indices: j === i ? [i] : [i, j], target: eff < 0 ? 'opponent' : 'self' }; }
-      }
-    }
-  }
-  return best;
-}
+  return (
+    <div className="page-game">
+      <Header />
 
-export function useGame() {
-  const [gameState, setGameState] = useState(null);
-  const [selected, setSelected] = useState([]);
-  const [log, setLog] = useState([]);
-  const [gameOver, setGameOver] = useState(null);
-  const [status, setStatus] = useState('');
+      <ScoreBoard
+        players={[
+          { label: 'You', hp: playerHP, isActive: isMyTurn },
+          { label: 'AI 🤖', hp: aiHP, isActive: !isMyTurn },
+        ]}
+        maxHP={20}
+      />
 
-  const addLog = (msg) => setLog(prev => [msg, ...prev].slice(0, 8));
+      <div className="status-bar">{status}</div>
 
-  const initGame = useCallback(() => {
-    const deck = shuffle([...CARD_DATA, ...CARD_DATA]);
-    const playerHand = [], aiHand = [];
-    for (let i = 0; i < 6; i++) {
-      playerHand.push(deck.pop());
-      aiHand.push(deck.pop());
-    }
-    setGameState({ deck, playerHand, aiHand, playerHP: 20, aiHP: 20, turn: 'player', lastPlayed: null });
-    setSelected([]);
-    setLog([]);
-    setGameOver(null);
-    setStatus('Your turn! Select cards to play.');
-  }, []);
+      {/* AI hand face-down */}
+      <div>
+        <div className="section-label">AI's Hand</div>
+        <div className="hand-row">
+          {aiHand.map((_, i) => <div key={i} className="card-back">✦</div>)}
+        </div>
+      </div>
 
-  const toggleCard = useCallback((idx) => {
-    if (!gameState || gameState.turn !== 'player') return;
-    const card = gameState.playerHand[idx];
-    setSelected(prev => {
-      if (prev.includes(idx)) return prev.filter(i => i !== idx);
-      if (card.type === 'double') {
-        return prev.length === 0 ? [idx] : prev; // double must be alone
-      }
-      if (prev.length === 0) return [idx];
-      if (prev.length === 1 && gameState.playerHand[prev[0]].type !== 'double') return [...prev, idx];
-      return prev; // max 2 singles
-    });
-  }, [gameState]);
+      {/* Deck + last played */}
+      <div className="center-row">
+        <div>
+          <div className="pile-label">Deck</div>
+          <div className="deck-pile">
+            <div className="deck-num">{deck.length}</div>
+            <div className="deck-txt">cards</div>
+          </div>
+        </div>
+        <div>
+          <div className="pile-label">Last Played</div>
+          <div className="last-played">
+            {lastPlayed
+              ? <img src={require(`../images/detox${lastPlayed.id}.png`)} alt="" />
+              : <span className="last-played-empty">—</span>}
+          </div>
+        </div>
+      </div>
 
-  const checkEnd = (state) => {
-    if (state.playerHP <= 0 || state.aiHP <= 0 || state.deck.length === 0) {
-      const winner = state.playerHP > state.aiHP ? 'You' : state.aiHP > state.playerHP ? 'AI' : 'Tie';
-      setGameOver({ winner, playerHP: state.playerHP, aiHP: state.aiHP });
-      return true;
-    }
-    return false;
-  };
+      {/* Your hand */}
+      <div>
+        <div className="section-label section-label-blue">Your Hand</div>
+        <div className="hand-row">
+          {playerHand.map((card, idx) => (
+            <Card key={idx} card={card} selected={selected.includes(idx)}
+              disabled={!isMyTurn} onClick={() => toggleCard(idx)}
+              onMouseEnter={setPreview} onMouseLeave={() => setPreview(null)} />
+          ))}
+        </div>
+      </div>
 
-  const playCards = useCallback((target) => {
-    if (!gameState || selected.length === 0) return;
-    const cards = selected.map(i => gameState.playerHand[i]);
-    const effect = calcEffect(cards);
+      {/* Actions */}
+      {isMyTurn && (
+        <div className="action-panel">
+          <div className="action-hint">
+            {selected.length === 0 ? 'Select 1 double-trait or up to 2 single-trait cards'
+              : `${selected.length} card${selected.length > 1 ? 's' : ''} selected — play on:`}
+          </div>
+          <div className="action-row">
+            <button className="btn-action blue" disabled={!canPlay} onClick={() => playCards('self')}>✦ Myself</button>
+            <button className="btn-action pink" disabled={!canPlay} onClick={() => playCards('opponent')}>✦ AI</button>
+          </div>
+        </div>
+      )}
 
-    setGameState(prev => {
-      const next = { ...prev, playerHand: [...prev.playerHand], aiHand: [...prev.aiHand], deck: [...prev.deck] };
-      if (target === 'self') next.playerHP = Math.max(0, prev.playerHP + effect);
-      else next.aiHP = Math.max(0, prev.aiHP + effect);
+      {/* Log */}
+      {log.length > 0 && (
+        <div className="game-log">
+          {log.map((l, i) => <div key={i} className="log-line">{l}</div>)}
+        </div>
+      )}
 
-      // remove played cards
-      [...selected].sort((a, b) => b - a).forEach(i => next.playerHand.splice(i, 1));
-      // draw back up to 6
-      while (next.playerHand.length < 6 && next.deck.length > 0) next.playerHand.push(next.deck.pop());
+      {/* Preview */}
+      {preview && (
+        <div className="card-preview">
+          <img src={require(`../images/detox${preview.id}.png`)} alt={preview.name} />
+        </div>
+      )}
 
-      next.lastPlayed = cards[cards.length - 1];
-      next.turn = 'ai';
-
-      addLog(`You played ${cards.map(c => c.name).join(' + ')} on ${target === 'self' ? 'yourself' : 'AI'} (${effect >= 0 ? '+' : ''}${effect} HP)`);
-
-      if (!checkEnd(next)) {
-        setStatus('AI is thinking...');
-        setTimeout(() => doAITurn(), 1300);
-      }
-      return next;
-    });
-    setSelected([]);
-  }, [gameState, selected]);
-
-  const doAITurn = useCallback(() => {
-    setGameState(prev => {
-      if (!prev) return prev;
-      const next = { ...prev, aiHand: [...prev.aiHand], playerHand: [...prev.playerHand], deck: [...prev.deck] };
-      const play = aiChoosePlay(next.aiHand);
-      if (!play) { next.turn = 'player'; setStatus('Your turn!'); return next; }
-
-      const cards = play.indices.map(i => next.aiHand[i]);
-      const effect = calcEffect(cards);
-
-      if (play.target === 'self') next.aiHP = Math.max(0, prev.aiHP + effect);
-      else next.playerHP = Math.max(0, prev.playerHP + effect);
-
-      play.indices.sort((a, b) => b - a).forEach(i => next.aiHand.splice(i, 1));
-      while (next.aiHand.length < 6 && next.deck.length > 0) next.aiHand.push(next.deck.pop());
-
-      next.lastPlayed = cards[cards.length - 1];
-      next.turn = 'player';
-
-      addLog(`AI played ${cards.map(c => c.name).join(' + ')} on ${play.target === 'self' ? 'itself' : 'you'} (${effect >= 0 ? '+' : ''}${effect} HP)`);
-
-      if (!checkEnd(next)) setStatus('Your turn! Select cards to play.');
-      return next;
-    });
-  }, []);
-
-  return { gameState, selected, log, gameOver, status, initGame, toggleCard, playCards };
+      {gameOver && (
+        <GameOverModal isAI winner={gameOver.winner}
+          players={[{ displayName: 'You', hp: gameOver.playerHP }, { displayName: 'AI', hp: gameOver.aiHP }]}
+          onPlayAgain={initGame} />
+      )}
+    </div>
+  );
 }
