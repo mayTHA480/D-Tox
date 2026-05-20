@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 
 const authRoutes = require('./routes/authRoutes');
 const gameRoutes = require('./routes/gameRoutes');
@@ -15,5 +16,13 @@ app.use('/api/game', gameRoutes);
 app.use('/api/user', userRoutes);
 
 app.get('/health', (_, res) => res.json({ status: 'ok' }));
+
+// Serve frontend build
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
+
+// Catch-all: send index.html for any unknown route
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
+});
 
 module.exports = app;
