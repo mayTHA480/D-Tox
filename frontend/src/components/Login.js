@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithRedirect , createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import '../index.css';
 
 const BACKEND = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
 
 function Login() {
-  console.log("BACKEND:", process.env.REACT_APP_BACKEND_URL);
   const [tab, setTab] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,9 +30,9 @@ function Login() {
   const handleGoogle = async () => {
     setLoading(true); setError('');
     try {
-      const result = await signInWithPopup(auth, googleProvider);
+      const result = await signInWithRedirect(auth, googleProvider);
       await syncWithBackend(result.user);
-      window.location.href = '/singleplayer';
+      window.location.href = '/multiplayer.html';
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
@@ -74,7 +73,7 @@ function Login() {
       const data = await res.json();
       if (!data.success) throw new Error(data.error);
       sessionStorage.setItem('detox_guest', JSON.stringify({ ...data.user, isGuest: true }));
-      window.location.href = '/singleplayer';
+      window.location.href = '/singleplayer.html';
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   };
