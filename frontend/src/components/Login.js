@@ -3,6 +3,21 @@ import { signInWithRedirect , createUserWithEmailAndPassword, signInWithEmailAnd
 import { auth, googleProvider } from '../firebase';
 import '../index.css';
 
+import { getRedirectResult } from "firebase/auth";
+
+useEffect(() => {
+  const handleRedirect = async () => {
+    const result = await getRedirectResult(auth);
+
+    if (result?.user) {
+      await syncWithBackend(result.user);
+      window.location.href = '/multiplayer.html';
+    }
+  };
+
+  handleRedirect();
+}, []);
+
 const BACKEND = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
 
 function Login() {
@@ -28,14 +43,17 @@ function Login() {
   };
 
   const handleGoogle = async () => {
-    setLoading(true); setError('');
-    try {
-      const result = await signInWithRedirect(auth, googleProvider);
-      await syncWithBackend(result.user);
-      window.location.href = '/multiplayer.html';
-    } catch (e) { setError(e.message); }
-    finally { setLoading(false); }
-  };
+  setLoading(true);
+  setError('');
+
+  try {
+    await signInWithRedirect(auth, googleProvider);
+  } catch (e) {
+    setError(e.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleRegister = async (e) => {
     e.preventDefault();

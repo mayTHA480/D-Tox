@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { GoogleAuthProvider } from 'firebase/auth';
+
+import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
+
+const auth = getAuth();
+
+setPersistence(auth, browserLocalPersistence);
 
 const firebaseConfig = {
   apiKey:            process.env.REACT_APP_FIREBASE_API_KEY,
