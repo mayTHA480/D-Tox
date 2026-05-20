@@ -12,7 +12,16 @@ export default function SinglePlayer() {
   const { gameState, selected, log, gameOver, status, initGame, toggleCard, playCards } = useGame();
   const [preview, setPreview] = useState(null);
 
-  useEffect(() => { if (!loading && !user) window.location.href = '/'; }, [user, loading]);
+useEffect(() => {
+    if (!loading && !user) {
+      const timer = setTimeout(() => {
+        if (!sessionStorage.getItem('detox_guest')) {
+          window.location.href = '/';
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading]);
   useEffect(() => { if (user) initGame(); }, [user]);
 
   if (loading || !gameState) {

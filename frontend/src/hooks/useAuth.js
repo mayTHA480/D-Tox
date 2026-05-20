@@ -7,14 +7,17 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check guest FIRST before waiting for Firebase
+    const guest = sessionStorage.getItem('detox_guest');
+    if (guest) {
+      setUser(JSON.parse(guest));
+      setLoading(false);
+      return;
+    }
+
+    // Only wait for Firebase if no guest
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-      } else {
-        // check guest in sessionStorage
-        const guest = sessionStorage.getItem('detox_guest');
-        setUser(guest ? JSON.parse(guest) : null);
-      }
+      setUser(firebaseUser || null);
       setLoading(false);
     });
     return () => unsub();
