@@ -4,6 +4,7 @@ import Card from './Card';
 import GameOverModal from './GameOverModal';
 import { useGame } from '../hooks/useGame';
 import { useAuth } from '../hooks/useAuth';
+import ScoreBoard from './ScoreBoard';
 import '../index.css';
 
 export default function SinglePlayer() {
