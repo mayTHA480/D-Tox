@@ -1,34 +1,33 @@
-// import React from 'react';
-// import ReactDOM from 'react-dom/client';
-// import Login from './components/Login';
-// import SinglePlayer from './components/SinglePlayer';
-// import Multiplayer from './components/Multiplayer';
-// import './index.css';
-
-// // Route to the right component based on which root div exists
-// const loginRoot = document.getElementById('root-login');
-// const singleRoot = document.getElementById('root-singleplayer');
-// const multiRoot = document.getElementById('root-multiplayer');
-
-// if (loginRoot) {
-//   ReactDOM.createRoot(loginRoot).render(<Login />);
-// } else if (singleRoot) {
-//   ReactDOM.createRoot(singleRoot).render(<SinglePlayer />);
-// } else if (multiRoot) {
-//   ReactDOM.createRoot(multiRoot).render(<Multiplayer />);
-// }
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import Login from './components/Login';
 import SinglePlayer from './components/SinglePlayer';
 import './index.css';
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root')
-);
+// Check if guest or Firebase user is already logged in
+const guest = sessionStorage.getItem('detox_guest');
 
-root.render(
-  <React.StrictMode>
-    <SinglePlayer />
-  </React.StrictMode>
-);
+// Route based on current page path
+const path = window.location.pathname;
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+
+if (path.includes('singleplayer')) {
+  // Only allow access if logged in
+  if (!guest) {
+    window.location.href = '/singleplayer';
+  } else {
+    root.render(
+      <React.StrictMode>
+        <SinglePlayer />
+      </React.StrictMode>
+    );
+  }
+} else {
+  // Default: show Login page
+  root.render(
+    <React.StrictMode>
+      <Login />
+    </React.StrictMode>
+  );
+}

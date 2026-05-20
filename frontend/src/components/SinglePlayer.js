@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Header from './Header';
 import Card from './Card';
-import ScoreBoard from './ScoreBoard';
 import GameOverModal from './GameOverModal';
 import { useGame } from '../hooks/useGame';
 import { useAuth } from '../hooks/useAuth';
