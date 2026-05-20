@@ -23,6 +23,12 @@ import ReactDOM from 'react-dom/client';
 import SinglePlayer from './components/SinglePlayer';
 import './index.css';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root = ReactDOM.createRoot(
+  document.getElementById('root')
+);
 
-root.render(<SinglePlayer />);
+root.render(
+  <React.StrictMode>
+    <SinglePlayer />
+  </React.StrictMode>
+);
